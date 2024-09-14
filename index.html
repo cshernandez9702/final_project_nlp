@@ -1,168 +1,58 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Construcción de un Chatbot con RAG usando Llama 3</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      line-height: 1.6;
-    }
-    h1, h2, h3 {
-      color: #2c3e50;
-    }
-    p {
-      margin-bottom: 10px;
-    }
-    figure {
-      text-align: center;
-    }
-    figcaption {
-      font-size: 0.9em;
-      color: #7f8c8d;
-    }
-    pre {
-      background-color: #f4f4f4;
-      padding: 10px;
-      border-radius: 5px;
-      overflow-x: auto;
-    }
-    code {
-      font-family: monospace;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My GitHub Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#about">About Me</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
 
-<h1>Construcción de un Chatbot con Generación Aumentada por Recuperación (RAG) usando Llama 3 para Consultas Locales en PDFs</h1>
+    <section id="hero">
+        <h1>Welcome to My GitHub Page</h1>
+        <p>I am a passionate developer who loves creating amazing things!</p>
+    </section>
 
-<h2>Introducción</h2>
-<p>En la actualidad, las organizaciones necesitan extraer información rápidamente de grandes volúmenes de documentos, incluyendo PDFs confidenciales. Los métodos tradicionales pueden ser ineficientes y propensos a errores, como las alucinaciones en modelos de lenguaje. Para mejorar la productividad y reducir estas alucinaciones, se desarrolla un chatbot que utiliza la <strong>Generación Aumentada por Recuperación (RAG)</strong> y <strong>Llama 3</strong> para permitir consultas eficientes y seguras de documentos PDF locales.</p>
+    <section id="about">
+        <h2>About Me</h2>
+        <p>This is a brief description about myself. I enjoy working on web development, data science, and open-source projects.</p>
+    </section>
 
-<p>Este proyecto demuestra cómo las técnicas avanzadas de Procesamiento de Lenguaje Natural (PLN) pueden crear una herramienta poderosa para extraer información de datos no estructurados, garantizando la confidencialidad y aumentando la precisión de las respuestas.</p>
+    <section id="projects">
+        <h2>My Projects</h2>
+        <div class="project-list">
+            <div class="project-item">
+                <h3>Project 1</h3>
+                <p>Description of project 1. You can add a link to your GitHub repository.</p>
+                <a href="https://github.com/yourusername/project1" target="_blank">View on GitHub</a>
+            </div>
+            <div class="project-item">
+                <h3>Project 2</h3>
+                <p>Description of project 2.</p>
+                <a href="https://github.com/yourusername/project2" target="_blank">View on GitHub</a>
+            </div>
+        </div>
+    </section>
 
-<figure>
-  <img src="https://raw.githubusercontent.com/cshernandez9702/mmia_usfq_nlp/main/1.png" alt="Diagrama de Flujo del Proceso RAG" width="400">
-</figure>
+    <section id="contact">
+        <h2>Contact</h2>
+        <p>If you would like to get in touch, feel free to <a href="mailto:youremail@example.com">email me</a>.</p>
+    </section>
 
-<h3>Generación Aumentada por Recuperación (RAG)</h3>
-<p><strong>RAG</strong> es un método que permite recuperar documentos relevantes de una base de conocimiento y utilizarlos como contexto para generar respuestas a las consultas de los usuarios.</p>
+    <footer>
+        <p>&copy; 2024 My GitHub Page</p>
+    </footer>
 
-<figure>
-  <img src="https://raw.githubusercontent.com/cshernandez9702/mmia_usfq_nlp/main/2.png" alt="Diagrama de Flujo del Proceso RAG" width="1200">
-  <figcaption><em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://blog.langchain.dev/semi-structured-multi-modal-rag/">Enlace a la fuente</a></em></figcaption>
-</figure>
-
-<h3>Llama 3</h3>
-<p><strong>Llama 3</strong> es un modelo de lenguaje grande desarrollado para entender y generar texto similar al humano. Destaca en diversas tareas de PLN y, cuando se afina adecuadamente, puede proporcionar respuestas detalladas y contextualmente precisas.</p>
-
-<h3>RAG y Llama 3</h3>
-<p>Al integrar RAG con Llama 3, mejoramos la capacidad del modelo para generar respuestas que son tanto contextualmente relevantes como informadas por el contenido específico de los PDFs locales. Esta combinación permite construir un chatbot capaz de manejar consultas complejas sobre documentos confidenciales sin comprometer la seguridad de los datos.</p>
-
-<h2>Objetivos</h2>
-<ul>
-  <li><strong>Desarrollar un chatbot</strong> que pueda consultar documentos PDF locales utilizando RAG y Llama 3.</li>
-  <li><strong>Garantizar la confidencialidad de los datos</strong> procesando los documentos localmente sin enviar datos a servidores externos.</li>
-  <li><strong>Proporcionar respuestas precisas y contextualmente relevantes</strong> a las consultas de los usuarios.</li>
-</ul>
-
-<h3>Visión General</h3>
-<p>Componentes:</p>
-<ol>
-  <li><strong>Carga y Configuración del Modelo</strong>: Carga del modelo Llama 3 y su tokenizador.</li>
-  <li><strong>Carga y Procesamiento de PDFs</strong>: Lectura de PDFs y extracción de contenido textual.</li>
-  <li><strong>Generación de Embeddings y Configuración del Vector Store</strong>: Conversión de texto en embeddings y almacenamiento usando Chroma.</li>
-  <li><strong>Configuración de RAG</strong>: Creación de un RAG CHAIN por recuperación.</li>
-</ol>
-
-<h3>Carga y Configuración del Modelo</h3>
-<pre><code>def load_model_and_tokenizer(model_path):
-    start_time = time()
-    config = transformers.AutoConfig.from_pretrained(model_path,
-                                                     trust_remote_code=True,
-                                                     max_new_tokens=2048)
-    model = transformers.AutoModelForCausalLM.from_pretrained(model_path,
-                                                              trust_remote_code=True,
-                                                              config=config,
-                                                              device_map='auto')
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    print(f"Model and tokenizer loaded in {round(time() - start_time, 3)} sec.")
-    return model, tokenizer
-</code></pre>
-
-<h3>Carga y Procesamiento de PDFs usando la librería <code>unstructured</code></h3>
-<pre><code>def load_pdf_with_unstructured(pdf_path):
-    raw_pdf_elements = partition_pdf(
-        filename=pdf_path,
-        strategy="hi_res",
-        extract_images_in_pdf=False,
-        extract_image_block_types=["Table"]
-    )
-    # Clasificar los elementos del PDF
-    # ...
-    return combined_text, combined_tables
-</code></pre>
-
-<h3>Generación de Embeddings y Configuración del Vector Store</h3>
-<pre><code>def setup_vectorstore_unstructured(doc_text, table_text, model_name="sentence-transformers/all-mpnet-base-v2"):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    embeddings = HuggingFaceEmbeddings(model_name=model_name, model_kwargs={"device": device})
-
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    chunks_text = splitter.split_text(doc_text)
-    chunks_tables = splitter.split_text(table_text)
-
-    documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_text"}) for chunk in chunks_text]
-    table_documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_table"}) for chunk in chunks_tables]
-    
-    all_documents = documents + table_documents
-    return Chroma.from_documents(all_documents, embeddings, persist_directory="./NLP_FINAL/chroma_db_unstructured")
-</code></pre>
-
-<figure>
-  <img src="https://raw.githubusercontent.com/cshernandez9702/mmia_usfq_nlp/main/3.png" alt="" width="400">
-  <figcaption><em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://tech-depth-and-breadth.medium.com/my-notes-from-deeplearning-ais-course-on-advanced-retrieval-for-ai-with-chroma-2dbe24cc1c91">Enlace a la fuente</a></em></figcaption>
-</figure>
-
-<h3>Chatbot</h3>
-<pre><code>class RAGChatbot:
-    def __init__(self, qa_chain, max_context_length=4096):
-        self.qa_chain = qa_chain
-        self.history = ""  # Historial de preguntas y respuestas
-
-    def add_to_history(self, question, answer):
-        self.history += f"Question: {question}\nAnswer: {answer}\n\n"
-
-    def get_chatbot_response(self, new_question):
-        input_with_history = f"{self.history}\nQuestion: {new_question}"
-        raw_response = self.qa_chain.run(input_with_history)
-        final_response = filter_delimited_response(raw_response, new_question, delimiter="Answer:")
-        self.add_to_history(new_question, final_response)
-        return final_response
-
-    def chat(self):
-        while True:
-            user_question = input("Tú: ")
-            if user_question.lower() in ['salir', 'exit']:
-                break
-            self.get_chatbot_response(user_question)
-</code></pre>
-
-<h2>Resultados</h2>
-<p>El chatbot responde exitosamente a consultas recuperando información relevante de los PDFs locales y generando respuestas coherentes.</p>
-
-<h2>Conclusión</h2>
-<p>El sistema garantiza la confidencialidad de los datos al procesar los documentos localmente y proporciona respuestas precisas y contextualmente relevantes. Es necesario mejorar en el procesamiento de texto para optimizar aún más la calidad y coherencia de las respuestas.</p>
-
-<h2>Referencias</h2>
-<ul>
-  <li><a href="https://huggingface.co/docs/transformers/index">Documentación de Hugging Face Transformers</a></li>
-  <li><a href="https://langchain.readthedocs.io/en/latest/">Documentación de LangChain</a></li>
-  <li><a href="https://www.trychroma.com/">Documentación de Chroma</a></li>
-  <li><a href="https://github.com/Unstructured-IO/unstructured">Librería unstructured</a></li>
-</ul>
-
+    <script src="script.js"></script>
 </body>
 </html>
