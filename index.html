@@ -1,216 +1,271 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Construcción de un Chatbot con RAG usando Llama 3</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construcción de un Chatbot con RAG usando Llama 3 para Consultas en PDFs</title>
 </head>
 <body>
-  <h1>Construcción de un Chatbot con Generación Aumentada por Recuperación (RAG) usando Llama 3 para Consultas Locales en PDFs</h1>
-  
-  <h2>Introducción</h2>
-  <p>En la actualidad, las organizaciones necesitan extraer información rápidamente de grandes volúmenes de documentos, incluyendo PDFs confidenciales. Los métodos tradicionales pueden ser ineficientes y propensos a errores, como las alucinaciones en modelos de lenguaje. Para mejorar la productividad y reducir estas alucinaciones, se desarrolla un chatbot que utiliza la <strong>Generación Aumentada por Recuperación (RAG)</strong> y <strong>Llama 3</strong> para permitir consultas eficientes y seguras de documentos PDF locales. Este proyecto demuestra cómo las técnicas avanzadas de Procesamiento de Lenguaje Natural (PLN) pueden crear una herramienta poderosa para extraer información de datos no estructurados, garantizando la confidencialidad y aumentando la precisión de las respuestas.</p>
-  
-  <p align="center">
-    <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/1.png" alt="Diagrama de Flujo del Proceso RAG" width="400">
-  </p>
-  
-  <h3>Generación Aumentada por Recuperación (RAG)</h3>
-  <p><strong>RAG</strong> es un método que permite recuperar documentos relevantes de una base de conocimiento y utilizarlos como contexto para generar respuestas a las consultas de los usuarios.</p>
-  
-  <figure style="text-align: center;">
-    <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/2.png" alt="Diagrama de Flujo del Proceso RAG" width="1200">
-    <figcaption><em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://blog.langchain.dev/semi-structured-multi-modal-rag/">Enlace a la fuente</a></em></figcaption>
-  </figure>
-  
-  <h3>Llama 3</h3>
-  <p><strong>Llama 3</strong> es un modelo de lenguaje grande desarrollado para entender y generar texto similar al humano. Destaca en diversas tareas de PLN y, cuando se afina adecuadamente, puede proporcionar respuestas detalladas y contextualmente precisas.</p>
-  
-  <h3>RAG y Llama 3</h3>
-  <p>Al integrar RAG con Llama 3, mejoramos la capacidad del modelo para generar respuestas que son tanto contextualmente relevantes como informadas por el contenido específico de los PDFs locales. Esta combinación permite construir un chatbot capaz de manejar consultas complejas sobre documentos confidenciales sin comprometer la seguridad de los datos.</p>
-  
-  <h2>Objetivos</h2>
-  <ul>
-    <li><strong>Desarrollar un chatbot</strong> que pueda consultar documentos PDF locales utilizando RAG y Llama 3.</li>
-    <li><strong>Garantizar la confidencialidad de los datos</strong> procesando los documentos localmente sin enviar datos a servidores externos.</li>
-    <li><strong>Proporcionar respuestas precisas y contextualmente relevantes</strong> a las consultas de los usuarios.</li>
-  </ul>
-  
-  <h3>Modelos</h3>
-  <ul>
-    <li>Llama 3 (8B parámetros)</li>
-    <li>Sentence Transformers para embeddings</li>
-  </ul>
-  
-  <h3>Datos</h3>
-  <ul>
-    <li>Documentos PDF locales</li>
-  </ul>
-  
-  <h3>Visión General</h3>
-  <p>Componentes:</p>
-  <ol>
-    <li><strong>Carga y Configuración del Modelo</strong>: Carga del modelo Llama 3 y su tokenizador.</li>
-    <li><strong>Carga y Procesamiento de PDFs</strong>: Lectura de PDFs y extracción de contenido textual.</li>
-    <li><strong>Generación de Embeddings y Configuración del Vector Store</strong>: Conversión de texto en embeddings y almacenamiento usando Chroma.</li>
-    <li><strong>Configuración de RAG</strong>: Creación de un RAG CHAIN por recuperación.</li>
-  </ol>
-  
-  <h3>Carga y Configuración del Modelo</h3>
-  <p>Comenzamos cargando el modelo Llama 3 y su tokenizador. El modelo se configura para ejecutarse eficientemente en el hardware disponible, utilizando aceleración GPU si es posible.</p>
+    <h1>Construcción de un Chatbot con Generación Aumentada por Recuperación (RAG) usando Llama 3 para Consultas Locales en PDFs</h1>
 
-  <pre><code>
-  def load_model_and_tokenizer(model_path):
-      start_time = time()
-      config = transformers.AutoConfig.from_pretrained(model_path,
-                                                       trust_remote_code=True,
-                                                       max_new_tokens=2048)
-      model = transformers.AutoModelForCausalLM.from_pretrained(model_path,
-                                                                trust_remote_code=True,
-                                                                config=config,
-                                                                device_map='auto' )
-      tokenizer = AutoTokenizer.from_pretrained(model_path)
-      print(f"Model and tokenizer loaded in {round(time() - start_time, 3)} sec.")
-      return model, tokenizer
-  </code></pre>
-  
-  <h3>Carga y Procesamiento de PDFs usando la librería <code>unstructured</code></h3>
-  <p>Para procesar los documentos PDF, utilizamos la librería <code>unstructured</code>, que permite extraer el texto de los PDFs sin incluir imágenes. Este paso es necesario para crear los embeddings.</p>
-  
-  <pre><code>
-  # Cargar el archivo PDF usando unstructured (sin imágenes)
-  def load_pdf_with_unstructured(pdf_path):
-      raw_pdf_elements = partition_pdf(
-          filename=pdf_path,
-          strategy="hi_res",
-          extract_images_in_pdf=False,
-          extract_image_block_types=["Table"]
-      )
-  
-      # Inicializar listas para cada tipo de contenido
-      Header, Footer, Title, NarrativeText, Text, ListItem, Tables = [], [], [], [], [], [], []
-  
-      # Clasificar los elementos del PDF
-      for element in raw_pdf_elements:
-          element_type = str(type(element))
-          if "Header" in element_type:
-              Header.append(str(element))
-          elif "Footer" in element_type:
-              Footer.append(str(element))
-          elif "Title" in element_type:
-              Title.append(str(element))
-          elif "NarrativeText" in element_type:
-              NarrativeText.append(str(element))
-          elif "Text" in element_type:
-              Text.append(str(element))
-          elif "ListItem" in element_type:
-              ListItem.append(str(element))
-          elif "Table" in element_type:
-              Tables.append(str(element))  # Almacenar las tablas como texto
-  
-      # Combinar los elementos que nos interesan para embeddings
-      combined_text = "\n".join(NarrativeText + Text + ListItem)
-      combined_tables = "\n".join(Tables)  # Combinar las tablas como texto adicional
-      return combined_text, combined_tables
-  </code></pre>
-  
-  <h3>Generación de Embeddings y Configuración del Vector Store</h3>
-  <p>Generamos embeddings a partir del texto extraído utilizando un modelo pre-entrenado de Sentence Transformer y los almacenamos usando ChromaDB.</p>
+    <h2>Introducción</h2>
+    <p>En la actualidad, las organizaciones necesitan extraer información rápidamente de grandes volúmenes de documentos, incluyendo PDFs confidenciales. Los métodos tradicionales pueden ser ineficientes y propensos a errores, como las alucinaciones en modelos de lenguaje. Para mejorar la productividad y reducir estas alucinaciones, se desarrolla un chatbot que utiliza la <strong>Generación Aumentada por Recuperación (RAG)</strong> y <strong>Llama 3</strong> para permitir consultas eficientes y seguras de documentos PDF locales.</p>
 
-  <pre><code>
-  def setup_vectorstore_unstructured(doc_text, table_text, model_name="sentence-transformers/all-mpnet-base-v2"):
-      device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-      embeddings = HuggingFaceEmbeddings(model_name=model_name, model_kwargs={"device": device})
+    <p align="center">
+        <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/1.png" alt="Diagrama de Flujo del Proceso RAG" width="400">
+    </p>
 
-      splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-      chunks_text = splitter.split_text(doc_text)
-      chunks_tables = splitter.split_text(table_text)
+    <h3>Generación Aumentada por Recuperación (RAG)</h3>
+    <p><strong>RAG</strong> es un método que permite recuperar documentos relevantes de una base de conocimiento y utilizarlos como contexto para generar respuestas a las consultas de los usuarios.</p>
 
-      documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_text"}) for chunk in chunks_text]
-      table_documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_table"}) for chunk in chunks_tables]
+    <figure style="text-align: center;">
+        <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/2.png" alt="Diagrama de Flujo del Proceso RAG" width="1200">
+        <figcaption>
+            <em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://blog.langchain.dev/semi-structured-multi-modal-rag/">Enlace a la fuente</a></em>
+        </figcaption>
+    </figure>
 
-      all_documents = documents + table_documents
+    <h3>RAG y Llama 3</h3>
+    <p>Al integrar RAG con Llama 3, mejoramos la capacidad del modelo para generar respuestas que son tanto contextualmente relevantes como informadas por el contenido específico de los PDFs locales. Esta combinación permite construir un chatbot capaz de manejar consultas complejas sobre documentos confidenciales sin comprometer la seguridad de los datos.</p>
 
-      return Chroma.from_documents(all_documents, embeddings, persist_directory="./NLP_FINAL/chroma_db_unstructured")
-  </code></pre>
-  
-  <figure style="text-align: center;">
-    <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/3.png" alt="" width="400">
-    <figcaption><em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://tech-depth-and-breadth.medium.com/my-notes-from-deeplearning-ais-course-on-advanced-retrieval-for-ai-with-chroma-2dbe24cc1c91">Enlace a la fuente</a></em></figcaption>
-  </figure>
-  
-  <h3>Chatbot</h3>
-  <p>Implementamos una clase de chatbot que mantiene un historial de conversación y maneja las interacciones con el usuario.</p>
+    <h2>Objetivos</h2>
+    <ul>
+        <li><strong>Desarrollar un chatbot</strong> que pueda consultar documentos PDF locales utilizando RAG y Llama 3.</li>
+        <li><strong>Garantizar la confidencialidad de los datos</strong> procesando los documentos localmente sin enviar datos a servidores externos.</li>
+        <li><strong>Proporcionar respuestas precisas y contextualmente relevantes</strong> a las consultas de los usuarios.</li>
+    </ul>
 
-  <pre><code>
-  class RAGChatbot:
-      def __init__(self, qa_chain, max_context_length=4096):
-          self.qa_chain = qa_chain
-          self.history = ""  # Historial de preguntas y respuestas
-          self.max_context_length = max_context_length  # Controlar el tamaño del contexto
+    <h3>Modelos:</h3>
+    <ul>
+        <li>Llama 3 (8B parámetros)</li>
+        <li>Sentence Transformers para embeddings</li>
+    </ul>
 
-      def add_to_history(self, question, answer):
-          self.history += f"Question: {question}\nAnswer: {answer}\n\n"
+    <h3>Datos:</h3>
+    <ul>
+        <li>Documentos PDF locales</li>
+    </ul>
 
-          if len(self.history) > self.max_context_length:
-              self.history = self.history[-self.max_context_length:]
+    <h3>Visión General</h3>
+    <p>Componentes:</p>
+    <ol>
+        <li><strong>Carga y Configuración del Modelo</strong>: Carga del modelo Llama 3 y su tokenizador.</li>
+        <li><strong>Carga y Procesamiento de PDFs</strong>: Lectura de PDFs y extracción de contenido textual.</li>
+        <li><strong>Generación de Embeddings y Configuración del Vector Store</strong>: Conversión de texto en embeddings y almacenamiento usando Chroma.</li>
+        <li><strong>Configuración de RAG</strong>: Creación de un RAG CHAIN por recuperación.</li>
+    </ol>
 
-      def get_chatbot_response(self, new_question):
-          input_with_history = f"{self.history}\nQuestion: {new_question}"
-          raw_response = self.qa_chain.run(input_with_history)
-          final_response = filter_delimited_response(raw_response, new_question, delimiter="Answer:")
-          self.add_to_history(new_question, final_response)
-          return final_response
+    <h3>Carga y Configuración del Modelo</h3>
+    <p>Comenzamos cargando el modelo Llama 3 y su tokenizador. El modelo se configura para ejecutarse eficientemente en el hardware disponible, utilizando aceleración GPU si es posible.</p>
 
-      def chat(self):
-          print("Bienvenido al chatbot. Escribe 'salir' para terminar la conversación.")
+    <pre><code>def load_model_and_tokenizer(model_path):
+    start_time = time()
+    config = transformers.AutoConfig.from_pretrained(model_path,
+                                                     trust_remote_code=True,
+                                                     max_new_tokens=2048)
+    model = transformers.AutoModelForCausalLM.from_pretrained(model_path,
+                                                              trust_remote_code=True,
+                                                              config=config,
+                                                              #quantization_config=quant_config,
+                                                              device_map='auto' )
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    print(f"Model and tokenizer loaded in {round(time() - start_time, 3)} sec.")
+    return model, tokenizer
+</code></pre>
 
-          while True:
-              user_question = input("Tú: ")
-              if user_question.lower() in ['salir', 'exit']:
-                  print("Chat terminado.")
-                  break
-              self.get_chatbot_response(user_question)
-  </code></pre>
-  
-  <h2>Resultados</h2>
-  <p>El chatbot responde exitosamente a consultas recuperando información relevante de los PDFs locales y generando respuestas coherentes.</p>
+    <h3>Carga y Procesamiento de PDFs usando la librería <code>unstructured</code></h3>
+    <p>Para procesar los documentos PDF, utilizamos la librería <code>unstructured</code>, que permite extraer el texto de los PDFs sin incluir imágenes. Este paso es necesario para crear los embeddings.</p>
 
-  <h3>Ejemplo de Interacción</h3>
-  <p><strong>Usuario</strong>: "¿Qué significa el término 'Cámara de Compensación Especializada (CCE)' según el manual operativo?"</p>
-  <p><strong>Chatbot</strong>: "In this context, the 'Cámara de Compensación Especializada (CCE)' refers to a specialized compensation chamber within the Banco Central Europeo (BCE)...</p>
+    <pre><code>def load_pdf_with_unstructured(pdf_path):
+    raw_pdf_elements = partition_pdf(
+        filename=pdf_path,                  # Ruta al archivo PDF
+        strategy="hi_res",                  # Estrategia de alta resolución
+        extract_images_in_pdf=False,        # No extraer imágenes dentro del PDF
+        extract_image_block_types=["Table"] # Extraer solo las tablas
+    )
 
-  <h2>Métricas</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>index</th>
-        <th>faithfulness</th>
-        <th>answer_correctness</th>
-        <th>Pregunta</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>0</td>
-        <td>0.714286</td>
-        <td>0.762032</td>
-        <td>¿Cuál es la visión de Corebi en cuanto a sus servicios de Data & Analytics?</td>
-      </tr>
-      <!-- Agrega más filas aquí -->
-    </tbody>
-  </table>
-  
-  <h2>Conclusión</h2>
-  <p>El chatbot se desempeña correctamente al consultar PDFs locales, superando en general el 70% en 'faithfulness' y 'answer correctness'. El sistema garantiza la confidencialidad de los datos al procesar los documentos localmente y proporciona respuestas precisas y contextualmente relevantes...</p>
-  
-  <h2>Referencias</h2>
-  <ul>
-    <li><a href="https://huggingface.co/docs/transformers/index">Documentación de Hugging Face Transformers</a></li>
-    <li><a href="https://langchain.readthedocs.io/en/latest/">Documentación de LangChain</a></li>
-    <li><a href="https://www.trychroma.com/">Documentación de Chroma</a></li>
-    <li><a href="https://github.com/Unstructured-IO/unstructured">Librería unstructured</a></li>
-    <li><a href="https://docs.ragas.io/en/latest/concepts/metrics/faithfulness.html">Librería Ragas</a></li>
-  </ul>
+    # Inicializar listas para cada tipo de contenido
+    Header, Footer, Title, NarrativeText, Text, ListItem, Tables = [], [], [], [], [], [], []
+
+    # Clasificar los elementos del PDF
+    for element in raw_pdf_elements:
+        element_type = str(type(element))
+        if "Header" in element_type:
+            Header.append(str(element))
+        elif "Footer" in element_type:
+            Footer.append(str(element))
+        elif "Title" in element_type:
+            Title.append(str(element))
+        elif "NarrativeText" in element_type:
+            NarrativeText.append(str(element))
+        elif "Text" in element_type:
+            Text.append(str(element))
+        elif "ListItem" in element_type:
+            ListItem.append(str(element))
+        elif "Table" in element_type:
+            Tables.append(str(element))  # Almacenar las tablas como texto
+
+    # Combinar los elementos que nos interesan para embeddings
+    combined_text = "\n".join(NarrativeText + Text + ListItem)
+    combined_tables = "\n".join(Tables)  # Combinar las tablas como texto adicional
+    return combined_text, combined_tables
+</code></pre>
+
+    <h3>Generación de Embeddings y Configuración del Vector Store</h3>
+    <p>Generamos embeddings a partir del texto extraído utilizando un modelo pre-entrenado de Sentence Transformer y los almacenamos usando ChromaDB.</p>
+
+    <pre><code>def setup_vectorstore_unstructured(doc_text, table_text, model_name="sentence-transformers/all-mpnet-base-v2"):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    embeddings = HuggingFaceEmbeddings(model_name=model_name, model_kwargs={"device": device})
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    chunks_text = splitter.split_text(doc_text)
+    chunks_tables = splitter.split_text(table_text)
+
+    documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_text"}) for chunk in chunks_text]
+    table_documents = [Document(page_content=chunk, metadata={"source": "unstructured_pdf_table"}) for chunk in chunks_tables]
+
+    all_documents = documents + table_documents
+
+    return Chroma.from_documents(all_documents, embeddings, persist_directory="./NLP_FINAL/chroma_db_unstructured")
+</code></pre>
+
+    <figure style="text-align: center;">
+        <img src="https://github.com/cshernandez9702/mmia_usfq_nlp/blob/main/3.png" alt="Diagrama de Flujo del Proceso RAG" width="400">
+        <figcaption>
+            <em>Diagrama de Flujo del Proceso RAG. Fuente: <a href="https://tech-depth-and-breadth.medium.com/my-notes-from-deeplearning-ais-course-on-advanced-retrieval-for-ai-with-chroma-2dbe24cc1c91">Enlace a la fuente</a></em>
+        </figcaption>
+    </figure>
+
+    <h3>Chatbot</h3>
+    <p>Implementamos una clase de chatbot que mantiene un historial de conversación y maneja las interacciones con el usuario.</p>
+
+    <pre><code>class RAGChatbot:
+    def __init__(self, qa_chain, max_context_length=4096):
+        self.qa_chain = qa_chain
+        self.history = ""  # Historial de preguntas y respuestas
+        self.max_context_length = max_context_length  # Controlar el tamaño del contexto
+
+    def add_to_history(self, question, answer):
+        self.history += f"Question: {question}\nAnswer: {answer}\n\n"
+        if len(self.history) > self.max_context_length:
+            self.history = self.history[-self.max_context_length:]
+
+    def get_chatbot_response(self, new_question):
+        input_with_history = f"{self.history}\nQuestion: {new_question}"
+        start_time = time()
+        raw_response = self.qa_chain.run(input_with_history)
+        elapsed_time = round(time() - start_time, 3)
+
+        final_response = filter_delimited_response(raw_response, new_question, delimiter="Answer:")
+        self.add_to_history(new_question, final_response)
+        print(f"{final_response}\n\nTime taken: {elapsed_time} sec.\n")
+        return final_response
+
+    def chat(self):
+        print("Bienvenido al chatbot. Escribe 'salir' para terminar la conversación.")
+        while True:
+            user_question = input("Tú: ")
+            if user_question.lower() in ['salir', 'exit']:
+                print("Chat terminado.")
+                break
+            self.get_chatbot_response(user_question)
+
+chatbot = RAGChatbot(qa_chain=rag_chain)
+chatbot.chat()
+</code></pre>
+
+    <h2>Resultados</h2>
+    <p>El chatbot responde exitosamente a consultas recuperando información relevante de los PDFs locales y generando respuestas coherentes.</p>
+
+    <h3>Ejemplo de Interacción</h3>
+    <p><strong>Usuario</strong>: "¿Qué significa el término 'Cámara de Compensación Especializada (CCE)' según el manual operativo?"</p>
+    <p><strong>Chatbot</strong>: "In this context, the 'Cámara de Compensación Especializada (CCE)' refers to a specialized compensation chamber..."</p>
+    <p><strong>Tiempo Tomado</strong>: 11.985 seg</p>
+
+    <h2>Métricas</h2>
+    <p>Faithfulness y Answer Correctness son evaluaciones claves en la precisión de las respuestas generadas.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Index</th>
+                <th>Faithfulness</th>
+                <th>Answer Correctness</th>
+                <th>Pregunta</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0</td>
+                <td>0.714286</td>
+                <td>0.762032</td>
+                <td>¿Cuál es la visión de Corebi en cuanto a sus servicios de Data & Analytics?</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>0.750000</td>
+                <td>0.551758</td>
+                <td>¿Qué es compensación según el manual operativo?</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>0.000000</td>
+                <td>0.709703</td>
+                <td>¿Qué entidad financiera ejecuta los procesos de liquidación en la Red Coonecta?</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>1.000000</td>
+                <td>0.220632</td>
+                <td>¿Qué significa la sigla RTC en el contexto de la Red Coonecta?</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>0.666667</td>
+                <td>0.958903</td>
+                <td>¿Qué es un cajero automático?</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>0.833333</td>
+                <td>0.677557</td>
+                <td>¿Qué es un tarjetahabiente?</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>0.846154</td>
+                <td>0.853127</td>
+                <td>¿Cuál es la función del switch central RTC en la red de cajeros automáticos?</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>0.800000</td>
+                <td>0.213479</td>
+                <td>¿Qué responsabilidades tienen las entidades participantes en el proceso de conciliación?</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>0.400000</td>
+                <td>0.674976</td>
+                <td>¿Cuál es el rol del Banco Central del Ecuador en el proceso de liquidación de la Red de Cajeros Automáticos?</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Conclusión</h2>
+    <p>El chatbot se desempeña correctamente al consultar PDFs locales, superando en general el 70% en 'faithfulness' y 'answer correctness'. El sistema garantiza la confidencialidad de los datos al procesar los documentos localmente.</p>
+
+    <h2>Referencias</h2>
+    <ul>
+        <li><a href="https://huggingface.co/docs/transformers/index">Documentación de Hugging Face Transformers</a></li>
+        <li><a href="https://langchain.readthedocs.io/en/latest/">Documentación de LangChain</a></li>
+        <li><a href="https://www.trychroma.com/">Documentación de Chroma</a></li>
+        <li><a href="https://github.com/Unstructured-IO/unstructured">Librería unstructured</a></li>
+        <li><a href="https://docs.ragas.io/en/latest/concepts/metrics/faithfulness.html">Librería Ragas: Faithfulness</a></li>
+        <li><a href="https://docs.ragas.io/en/latest/concepts/metrics/answer_correctness.html">Librería Ragas: Answer Correctness</a></li>
+        <li><a href="https://github.com/sunnysavita10/Generative-AI-Indepth-Basic-to-Advance/blob/main/MultiModal%20RAG/Extract_Image%2CTable%2CText_from_Document_MultiModal_Summrizer_RAG_App.ipynb">Multimodal RAG</a></li>
+        <li><a href="https://www.kaggle.com/code/gpreda/rag-using-llama3-langchain-and-chromadb">LLama 3, LangChain en Kaggle</a></li>
+    </ul>
 </body>
 </html>
