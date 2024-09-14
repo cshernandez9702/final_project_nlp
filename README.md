@@ -248,17 +248,28 @@ El chatbot responde exitosamente a consultas recuperando información relevante 
 
 ### Ejemplo de Interacción
 
-**Usuario**: "Explica cuáles son los tipos de transacciones a compensarse por RTC en español."
+**Usuario**: "¿Qué significa el término "Cámara de Compensación Especializada (CCE)" segun el manual operativo?"
 
-**Chatbot**: "Las transacciones a compensar por el RTC incluyen cheques, transferencias electrónicas y otras operaciones financieras detalladas en los documentos proporcionados."
+**Chatbot**: "In this context, the "Cámara de Compensación Especializada (CCE)" refers to a specialized compensation chamber within the Banco Central Europeo (BCE) that is responsible for processing and settling transactions between the entities participating in the Red Coonecta network. The CCE is responsible for ensuring that the transactions are properly compensated and settled, and that the entities are accurately credited or debited for their transactions.assistant"
 
-**Tiempo Tomado**: 3.2 segundos
+**Tiempo Tomado**: 11.985 seg
 
-*[Insertar una captura de pantalla de la interacción del chatbot demostrando el ejemplo anterior]*
+### Ejemplo de Interacción
 
-### Métricas de Rendimiento
+**Usuario**: "¿Qué se menciona acerca de las modalidades de integración en la red de cajeros automáticos?"
 
-- **Tiempo de Respuesta**: El tiempo promedio de respuesta es aceptable para uso interactivo.
+**Chatbot**: "According to the provided context, the entity participating in the Red de Cajeros Automáticos (RCA) network has two modalities of integration, which are selected by each entity in accordance with its technical, technological, and operational capacity. The two modalities are:
+
+1. Procesamiento en línea: This modality involves the processing of transactions in real-time, allowing for immediate settlement and clearing of transactions.
+2. Conciliación, compensación y liquidación: This modality involves the reconciliation, compensation, and settlement of transactions, which is done through the Cámara de Compensación
+"
+
+**Respuestas correcta: ** Debia contener definiciones de Frontend, Backend y Switch Externo.
+
+**Tiempo Tomado**: 12.55 seg
+
+
+- **Tiempo de Respuesta**: El tiempo promedio de respuesta es de 7 a 15 segundos. 
 - **Precisión**: Las respuestas son contextualmente relevantes y precisas basadas en los PDFs proporcionados.
 
 ## Limitaciones y Posibles Mejoras
