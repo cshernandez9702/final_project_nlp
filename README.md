@@ -272,32 +272,32 @@ El chatbot responde exitosamente a consultas recuperando información relevante 
 - **Tiempo de Respuesta**: El tiempo promedio de respuesta es de 7 a 15 segundos. 
 - **Precisión**: Las respuestas son contextualmente relevantes y precisas basadas en los PDFs proporcionados.
 
-## Limitaciones y Posibles Mejoras
 
-### Limitaciones
+## Métricas
 
-- **Requerimientos de Hardware**: El modelo Llama 3 es grande y requiere recursos significativos, lo que puede limitar su implementación en sistemas con hardware modesto.
-- **Tiempo de Inferencia**: A pesar de las optimizaciones, el tiempo de respuesta puede ser elevado para consultas muy complejas o documentos muy extensos.
-- **Procesamiento de Imágenes**: Actualmente, el sistema no procesa imágenes o gráficos que puedan contener información relevante.
-- **Dependencia del Contenido**: La precisión de las respuestas depende de la calidad y relevancia de los documentos PDF cargados.
+### Faithfulness
+Faithfulness evalúa si la respuesta generada por el modelo es fiel a la información contenida en los documentos de contexto recuperados. En otras palabras, verifica si la respuesta generada no introduce información incorrecta o inventada que no está presente en el contexto proporcionado.
 
-### Posibles Mejoras
+### Answer Correctness
+Answer Correctness mide qué tan correcta es la respuesta generada en comparación con la respuesta esperada o ground_truth. Evalúa si la respuesta generada es precisa y directamente responde a la pregunta.
 
-- **Optimización del Modelo**: Implementar técnicas como cuantización o destilación para reducir el tamaño del modelo y mejorar el rendimiento en hardware limitado.
-- **Ampliación del Soporte de Documentos**: Extender el soporte a otros formatos de documentos como Word, Excel, etc.
-- **Procesamiento de Imágenes**: Integrar capacidades para extraer y procesar texto de imágenes o gráficos incluidos en los PDFs.
-- **Mejora de la Interfaz**: Desarrollar una interfaz web o gráfica para mejorar la accesibilidad y la experiencia del usuario.
-- **Actualización Dinámica del Conocimiento**: Implementar mecanismos para actualizar el vector store en tiempo real con nuevos documentos o información.
+| index | faithfulness | answer_correctness | Pregunta                                                                                          |
+|-------|--------------|--------------------|--------------------------------------------------------------------------------------------------|
+| 0     | 0.714286     | 0.762032           | ¿Cuál es la visión de Corebi en cuanto a sus servicios de Data & Analytics?                       |
+| 1     | 0.750000     | 0.551758           | ¿Qué es compensación según el manual operativo?                                                   |
+| 2     | 0.000000     | 0.709703           | ¿Qué entidad financiera ejecuta los procesos de liquidación en la Red Coonecta?                   |
+| 3     | 1.000000     | 0.220632           | ¿Qué significa la sigla RTC en el contexto de la Red Coonecta?                                    |
+| 4     | 0.666667     | 0.958903           | ¿Qué es un cajero automático?                                                                     |
+| 5     | 0.833333     | 0.677557           | ¿Qué es un tarjetahabiente?                                                                       |
+| 6     | 0.846154     | 0.853127           | ¿Cuál es la función del switch central RTC en la red de cajeros automáticos?                      |
+| 7     | 0.800000     | 0.213479           | ¿Qué responsabilidades tienen las entidades participantes en el proceso de conciliación?          |
+| 8     | 0.400000     | 0.674976           | ¿Cuál es el rol del Banco Central del Ecuador en el proceso de liquidación de la Red de Cajeros Automáticos? |
+
 
 ## Conclusión
 
-Hemos desarrollado un chatbot funcional basado en RAG utilizando Llama 3 que puede consultar eficientemente PDFs locales. Este sistema garantiza la confidencialidad de los datos al procesar los documentos localmente y proporciona respuestas precisas y contextualmente relevantes a las consultas de los usuarios. El proyecto demuestra el potencial de combinar técnicas avanzadas de PLN para aplicaciones prácticas en la recuperación de información.
+se desempeña correctamente al consultar PDFs locales, superando en general el 70% en 'faithfulness' y 'answer correctness'. El sistema garantiza la confidencialidad de los datos al procesar los documentos localmente y proporciona respuestas precisas y contextualmente relevantes. Sin embargo, es necesario mejorar en el procesamiento de texto, específicamente en la división de los documentos en 'chunks' y en la tokenización, para optimizar aún más la calidad y coherencia de las respuestas.
 
-### Trabajo Futuro
-
-- **Integración con Sistemas Empresariales**: Conectar el chatbot con sistemas internos para ampliar su utilidad en entornos corporativos.
-- **Mejora de la Personalización**: Permitir ajustes personalizados en el comportamiento del chatbot según las necesidades del usuario.
-- **Soporte Multilingüe**: Ampliar la capacidad del chatbot para manejar consultas y documentos en múltiples idiomas.
 
 ## Referencias
 
@@ -305,31 +305,9 @@ Hemos desarrollado un chatbot funcional basado en RAG utilizando Llama 3 que pue
 - [Documentación de LangChain](https://langchain.readthedocs.io/en/latest/)
 - [Documentación de Chroma](https://www.trychroma.com/)
 - [Librería unstructured](https://github.com/Unstructured-IO/unstructured)
-
-## Apéndice
-
-### Fragmentos de Código
-
-#### Carga de Múltiples PDFs
-
-**Función utilizada**: `load_and_add_to_vectorstore(pdf_paths)`
-
-*[Insertar un diagrama o flujo que muestre el proceso de carga de múltiples PDFs y actualización del vector store]*
-
-#### Consulta al Sistema RAG
-
-**Función utilizada**: `query_rag_system(qa_chain, query)`
-
-### Ejemplo de Interacción con el Chatbot
-
-*[Insertar capturas de pantalla adicionales del chatbot manejando diferentes consultas, mostrando su capacidad para mantener el contexto y proporcionar respuestas precisas]*
-
----
-
-**Nota sobre Imágenes y Diagramas**:
-
-- **Diagrama de Flujo del Proceso RAG**: Debe ilustrar cómo el sistema recupera documentos relevantes y genera respuestas.
-- **Diagrama de Generación de Embeddings**: Representar cómo el texto se convierte en embeddings y se almacena.
-- **Capturas de Interacción del Chatbot**: Capturar interacciones reales para mostrar las capacidades del chatbot.
-
-
+- [Librería Ragas](https://docs.ragas.io/en/latest/concepts/metrics/faithfulness.html)
+- [Librería Ragas](https://docs.ragas.io/en/latest/concepts/metrics/answer_correctness.html)
+- [Librería unstructured](https://github.com/Unstructured-IO/unstructured)
+- [Multimodal RAG](https://github.com/sunnysavita10/Generative-AI-Indepth-Basic-to-Advance/blob/main/MultiModal%20RAG/Extract_Image%2CTable%2CText_from_Document_MultiModal_Summrizer_RAG_App.ipynb)
+- [LLama 3, LangChain](https://www.kaggle.com/code/gpreda/rag-using-llama3-langchain-and-chromadb)
+  
